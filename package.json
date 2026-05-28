@@ -16,7 +16,6 @@
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
-    "jspdf": "^3.0.3",
     "pinia": "^3.0.3",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
