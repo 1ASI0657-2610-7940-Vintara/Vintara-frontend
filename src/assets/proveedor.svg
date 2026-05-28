@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <rect width="100%" height="100%" fill="#fffdf6"/>
+  <g transform="translate(60,40)">
+    <!-- Cabeza con gorra -->
+    <circle cx="140" cy="120" r="80" fill="#f3c9a6" stroke="#000" stroke-width="4"/>
+    <path d="M70 110 q70 -50 140 0" fill="#254f6b" stroke="#000" stroke-width="3"/>
+    <!-- Bigote -->
+    <path d="M100 150 q40 22 80 0" stroke="#8b4a2b" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- Ojos -->
+    <ellipse cx="115" cy="118" rx="8" ry="12" fill="#000"/>
+    <ellipse cx="165" cy="118" rx="8" ry="12" fill="#000"/>
+    <!-- Cuerpo con overol -->
+    <rect x="40" y="200" width="200" height="240" rx="18" fill="#e07a3b" stroke="#000" stroke-width="4"/>
+    <rect x="70" y="240" width="140" height="140" rx="6" fill="#2e5a66"/>
+    <!-- Correas -->
+    <rect x="90" y="220" width="20" height="80" rx="6" fill="#2e5a66"/>
+    <rect x="190" y="220" width="20" height="80" rx="6" fill="#2e5a66"/>
+    <!-- Mano -->
+    <ellipse cx="20" cy="320" rx="24" ry="34" fill="#f3c9a6" stroke="#000" stroke-width="3"/>
+  </g>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <rect width="100%" height="100%" fill="#fff7f0"/>
+  <g transform="translate(60,40)">
+    <!-- Cabeza -->
+    <circle cx="140" cy="120" r="80" fill="#f3c9a6" stroke="#000" stroke-width="4"/>
+    <!-- Pelo -->
+    <path d="M80 95 q60 -70 120 0" fill="#4a2f22" stroke="#000" stroke-width="3"/>
+    <!-- Ojos -->
+    <ellipse cx="110" cy="120" rx="10" ry="14" fill="#000"/>
+    <ellipse cx="170" cy="120" rx="10" ry="14" fill="#000"/>
+    <!-- Sonrisa -->
+    <path d="M105 155 q35 28 70 0" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- Cuerpo -->
+    <rect x="60" y="200" width="160" height="220" rx="18" fill="#2b5a73" stroke="#000" stroke-width="4"/>
+    <!-- Camisa -->
+    <rect x="80" y="220" width="120" height="160" rx="8" fill="#a9d1e8"/>
+    <!-- Brazos -->
+    <rect x="20" y="220" width="40" height="150" rx="14" fill="#f3c9a6" stroke="#000" stroke-width="3"/>
+    <rect x="340-40" y="220" width="40" height="150" rx="14" fill="#f3c9a6" stroke="#000" stroke-width="3"/>
+  </g>
+</svg>
+
