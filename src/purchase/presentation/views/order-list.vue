@@ -14,7 +14,20 @@ onMounted(() => {
   store.fetchOrders();
 });
 
-const getStatusLabel = (status) => status; // Puedes agregar lógica de traducción
+const getStatusSeverity = (status) => {
+  if (!status) return 'secondary';
+  switch (status.toUpperCase()) {
+    case 'COMPLETED':
+    case 'DELIVERED':
+      return 'success';
+    case 'PENDING':
+      return 'warn';
+    case 'CANCELLED':
+      return 'danger';
+    default:
+      return 'info';
+  }
+};
 </script>
 
 <template>
@@ -29,7 +42,7 @@ const getStatusLabel = (status) => status; // Puedes agregar lógica de traducci
       <pv-column field="quantity" :header="t('orders.quantity')" />
       <pv-column field="status" :header="t('orders.status')">
         <template #body="slotProps">
-          <pv-tag :value="getStatusLabel(slotProps.data.status)" :severity="slotProps.data.status === 'DELIVERED' ? 'success' : 'warning'" />
+          <pv-tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
         </template>
       </pv-column>
       <pv-column :header="t('orders.actions')">

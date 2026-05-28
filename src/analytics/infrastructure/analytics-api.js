@@ -11,7 +11,8 @@ export class AnalyticsApi extends BaseApi {
     #analyticsEndpointPath;
 
     constructor() {
-        super();
+        const analyticsApiUrl = import.meta.env.VITE_ANALYTICS_API_URL || 'http://localhost:5005/api/v1';
+        super(analyticsApiUrl);
         this.#analyticsEndpointPath = analyticsEndpointPath;
     }
 

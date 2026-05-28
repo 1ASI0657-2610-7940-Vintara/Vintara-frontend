@@ -3,7 +3,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { BaseApi } from '../../shared/infrastructure/base-api.js';
 
-const apiInstance = new BaseApi().http;
+const authApiUrl = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:5001/api/v1';
+const apiInstance = new BaseApi(authApiUrl).http;
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);

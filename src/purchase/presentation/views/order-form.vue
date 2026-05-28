@@ -3,7 +3,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import usePurchaseStore from "../../application/purchase.store.js";
 import useInventoryStore from "../../../inventory/application/inventory.store.js";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Order } from "../../domain/model/order.entity.js";
 
 const { t } = useI18n();
@@ -12,20 +12,20 @@ const router = useRouter();
 const purchaseStore = usePurchaseStore();
 const inventoryStore = useInventoryStore();
 
-const form = ref({ supplyName: null, supplier: null, quantity: 0, status: "pending" });
+const form = ref({ productId: null, supplier: null, quantity: 0, status: "Pending" });
 const isEdit = computed(() => !!route.params.id);
 
-
 const statusOptions = computed(() => [
-  { label: t('orders.status-pending'), value: 'pending' },
-  { label: t('orders.status-shipped'), value: 'shipped' },
-  { label: t('orders.status-delivered'), value: 'delivered' },
-  { label: t('orders.status-cancelled'), value: 'cancelled' }
+  { label: t('orders.status-pending') || 'Pendiente', value: 'Pending' },
+  { label: t('orders.status-completed') || 'Completado', value: 'Completed' },
+  { label: t('orders.status-cancelled') || 'Cancelado', value: 'Cancelled' }
 ]);
 
 const supplyOptions = computed(() =>
-    [...new Set(inventoryStore.supplies.map(s => s.supplyName))]
-        .map(name => ({ label: name, value: name }))
+    inventoryStore.supplies.map(s => ({ 
+      label: `${s.supplyName} (${s.supplier})`, 
+      value: s.id 
+    }))
 );
 
 const supplierOptions = computed(() =>
@@ -33,24 +33,48 @@ const supplierOptions = computed(() =>
         .map(name => ({ label: name, value: name }))
 );
 
-onMounted(() => {
-  if (!inventoryStore.suppliesLoaded) inventoryStore.fetchSupplies();
+// Auto-fill supplier when product is selected
+watch(() => form.value.productId, (newId) => {
+  if (newId && !isEdit.value) {
+    const selectedSupply = inventoryStore.supplies.find(s => s.id === newId);
+    if (selectedSupply) {
+      form.value.supplier = selectedSupply.supplier;
+    }
+  }
+});
+
+onMounted(async () => {
+  if (!inventoryStore.suppliesLoaded) {
+    await inventoryStore.fetchSupplies();
+  }
 
   if (isEdit.value) {
     const order = purchaseStore.getOrderById(route.params.id);
-    if (order) form.value = { ...order };
+    if (order) {
+      form.value = {
+        productId: order.productId,
+        supplier: order.supplier,
+        quantity: order.quantity,
+        status: order.status
+      };
+    }
   }
 });
 
 const save = () => {
   const order = new Order({
     id: isEdit.value ? parseInt(route.params.id) : null,
-    ...form.value,
-    date: new Date().toISOString().split('T')[0]
+    productId: form.value.productId,
+    supplier: form.value.supplier,
+    quantity: form.value.quantity,
+    status: form.value.status
   });
 
-  if (isEdit.value) purchaseStore.updateOrder(order);
-  else purchaseStore.addOrder(order);
+  if (isEdit.value) {
+    purchaseStore.updateOrder(order);
+  } else {
+    purchaseStore.addOrder(order);
+  }
 
   router.push({ name: 'purchase-order-list' });
 };
@@ -67,7 +91,7 @@ const goBack = () => {
     <form @submit.prevent="save">
       <div class="field mb-3">
         <label>{{ t("orders.supply") }}</label>
-        <pv-select v-model="form.supplyName" :options="supplyOptions" optionLabel="label" optionValue="value" class="w-full" required />
+        <pv-select v-model="form.productId" :options="supplyOptions" optionLabel="label" optionValue="value" class="w-full" required />
       </div>
 
       <div class="field mb-3">

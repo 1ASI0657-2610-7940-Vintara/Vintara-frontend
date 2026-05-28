@@ -8,7 +8,8 @@ export class PurchaseOrdersApi extends BaseApi {
     #orderEndpoint; // Añadimos referencia para usarlo internamente si se desea
 
     constructor() {
-        super();
+        const purchaseApiUrl = import.meta.env.VITE_PURCHASE_API_URL || 'http://localhost:5003/api/v1';
+        super(purchaseApiUrl);
         this.#endpointPath = purchaseEndpoint;
         // BaseEndpoint ya tiene la lógica estándar (GET /, POST /, GET /{id}, etc.)
         this.#orderEndpoint = new BaseEndpoint(this, purchaseEndpoint);

@@ -11,7 +11,8 @@ export class ProfilesApi extends BaseApi {
     #profilesEndpoint;
 
     constructor() {
-        super();
+        const profilesApiUrl = import.meta.env.VITE_PROFILES_API_URL || 'http://localhost:5004/api/v1';
+        super(profilesApiUrl);
         this.#profilesEndpoint = new BaseEndpoint(this, profilesEndpointPath);
     }
 

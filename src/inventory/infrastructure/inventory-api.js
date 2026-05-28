@@ -23,7 +23,8 @@ export class InventoryApi extends BaseApi {
      * @constructor
      */
     constructor() {
-        super();
+        const inventoryApiUrl = import.meta.env.VITE_INVENTORY_API_URL || 'http://localhost:5002/api/v1';
+        super(inventoryApiUrl);
         this.#supplyEndpoint = new BaseEndpoint(this, supplyEndpointPath);
         this.#stockMovementEndpoint = new BaseEndpoint(this, stockMovementEndpointPath);
     }
