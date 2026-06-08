@@ -1,0 +1,10 @@
+{
+  "name": "Joan Delgado",
+  "email": "joan.delgado@winesoft.com",
+  "role": "Administrador de Sistemas",
+  "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuBU0ff2ZhQpK7ML8y70Pumm2U_znsKmHUNpCpAt5tuzuIBEUfI8uMtdrops5MKtdj6QgeQR1AbYRtHLpdq2eB9-DDbErG3kO98k-miAVaBjrLUDcuROLMmH8knLk9sNUk0V_ZdolSdp-Bmg1PQgISVOvdYrzKOUtqRgS7QuTMtmk2VYEfxpKMjY1TW1QQwqGxkUPnge4JyHws1cD8Q5vQj1KhUiZXdOxT-pf4YNfStNRluRoSJZR0u9FzI6hxt-f7ZMve8Z9KkTNg",
+  "preferences": {
+    "emailAlerts": true,
+    "smsAlerts": false
+  }
+}

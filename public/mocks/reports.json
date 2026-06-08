@@ -1,0 +1,26 @@
+[
+  {
+    "idReporte": "REP-2026-001",
+    "nombre": "Reporte Mensual de Cadena de Frío - Mayo 2026",
+    "tipo": "Mensual",
+    "fechaGeneracion": "2026-06-01 08:30:00",
+    "estado": "Completado",
+    "instalacion": "Zona de Cadena de Frío"
+  },
+  {
+    "idReporte": "REP-2026-002",
+    "nombre": "Auditoría de Temperaturas Críticas - Q2",
+    "tipo": "Auditoría",
+    "fechaGeneracion": "2026-06-03 14:15:00",
+    "estado": "Completado",
+    "instalacion": "Todas las instalaciones"
+  },
+  {
+    "idReporte": "REP-2026-003",
+    "nombre": "Reporte de Desviaciones de Humedad - Hornos",
+    "tipo": "Desviación",
+    "fechaGeneracion": "2026-06-05 10:00:00",
+    "estado": "Completado",
+    "instalacion": "Zona de Hornos e Incubadoras"
+  }
+]

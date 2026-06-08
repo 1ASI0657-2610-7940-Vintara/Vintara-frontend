@@ -1,0 +1,38 @@
+[
+  {
+    "idEquipo": "EQ-101",
+    "nombre": "Congelador Principal A",
+    "tipo": "Congelador",
+    "temperatura": -18.5,
+    "humedad": 45,
+    "estado": "Normal",
+    "timestamp": "2026-06-07 12:40:00"
+  },
+  {
+    "idEquipo": "EQ-102",
+    "nombre": "Ultracongelador Bio",
+    "tipo": "Congelador",
+    "temperatura": -65.0,
+    "humedad": 30,
+    "estado": "Alerta Crítica",
+    "timestamp": "2026-06-07 12:41:00"
+  },
+  {
+    "idEquipo": "EQ-103",
+    "nombre": "Cámara Frigorífica 1",
+    "tipo": "Cámara",
+    "temperatura": 4.2,
+    "humedad": 55,
+    "estado": "Normal",
+    "timestamp": "2026-06-07 12:42:00"
+  },
+  {
+    "idEquipo": "EQ-104",
+    "nombre": "Horno Industrial B",
+    "tipo": "Horno",
+    "temperatura": 205.0,
+    "humedad": 10,
+    "estado": "Normal",
+    "timestamp": "2026-06-07 12:43:00"
+  }
+]
