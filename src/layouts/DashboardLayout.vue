@@ -1,12 +1,36 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/auth'
+import { useAlertsStore } from '../store/alerts'
+import { useToastStore } from '../store/toast'
+import { useSensorAlerts } from '../composables/useSensorAlerts'
 import ProfileSlideOver from '../components/ProfileSlideOver.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const alertsStore = useAlertsStore()
+const toastStore = useToastStore()
 const showProfile = ref(false)
+
+// Iniciar el polling de alertas a nivel de layout para que el badge siempre esté actualizado
+const { alerts, serviceOffline, startPolling, stopPolling } = useSensorAlerts(5000)
+
+// Callback cuando llega una nueva alerta CRITICAL no notificada antes
+const handleNewCritical = (alert) => {
+  toastStore.error(
+    `Sensor "${alert.deviceId}" reporta ${alert.value}${alert.unit} — ${alert.sensorType.toUpperCase()}`,
+    '🚨 Alerta Crítica IoT'
+  )
+}
+
+import { onMounted, onUnmounted } from 'vue'
+onMounted(() => startPolling(handleNewCritical))
+onUnmounted(() => stopPolling())
+
+// Sincronizar el store global con los datos del composable
+watch(alerts, (newAlerts) => alertsStore.setAlerts(newAlerts))
+watch(serviceOffline, (val) => alertsStore.setServiceOffline(val))
 
 const handleLogout = () => {
   authStore.logout()
@@ -130,9 +154,25 @@ const handleLogout = () => {
               type="text"
             />
           </div>
-          <button class="p-2 text-on-surface-variant hover:text-primary transition-colors focus:ring-2 focus:ring-primary-container rounded-full relative">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+
+          <!-- Notifications Bell with functional critical badge -->
+          <button
+            :title="alertsStore.criticalCount > 0 ? `${alertsStore.criticalCount} alerta(s) crítica(s) no reconocidas` : 'Sin alertas críticas'"
+            class="p-2 text-on-surface-variant hover:text-primary transition-colors focus:ring-2 focus:ring-primary-container rounded-full relative"
+          >
+            <span
+              class="material-symbols-outlined"
+              :style="alertsStore.criticalCount > 0 ? 'font-variation-settings: \'FILL\' 1;' : ''"
+            >notifications</span>
+            <!-- Badge: solo visible cuando hay alertas críticas no reconocidas -->
+            <transition name="badge-pop">
+              <span
+                v-if="alertsStore.criticalCount > 0"
+                class="absolute -top-1 -right-1 min-w-[20px] h-5 bg-error text-on-error text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-surface"
+              >
+                {{ alertsStore.criticalCount > 99 ? '99+' : alertsStore.criticalCount }}
+              </span>
+            </transition>
           </button>
           
           <div 
@@ -153,6 +193,23 @@ const handleLogout = () => {
           </div>
         </div>
       </header>
+
+      <!-- IoT Service Offline Banner -->
+      <transition name="banner-slide">
+        <div
+          v-if="alertsStore.serviceOffline"
+          class="flex items-center gap-3 bg-amber-50 border-b border-amber-200 px-6 py-3 text-amber-800"
+        >
+          <span
+            class="material-symbols-outlined text-amber-600 text-[20px]"
+            style="font-variation-settings: 'FILL' 1;"
+          >wifi_off</span>
+          <p class="font-label-md text-label-md flex-1">
+            <strong>Servicio IoT no disponible.</strong> Reintentando conexión con el monitor de sensores...
+          </p>
+          <span class="font-body-sm text-[12px] text-amber-600 animate-pulse">Reconectando...</span>
+        </div>
+      </transition>
 
       <!-- Main Content Area -->
       <main class="flex-1 bg-surface-container-low p-8 overflow-y-auto">
@@ -178,5 +235,36 @@ const handleLogout = () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Badge pop animation */
+.badge-pop-enter-active {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.badge-pop-leave-active {
+  transition: all 0.15s ease-in;
+}
+.badge-pop-enter-from,
+.badge-pop-leave-to {
+  opacity: 0;
+  transform: scale(0);
+}
+
+/* Service offline banner animation */
+.banner-slide-enter-active,
+.banner-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.banner-slide-enter-from,
+.banner-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.banner-slide-enter-to,
+.banner-slide-leave-from {
+  max-height: 80px;
 }
 </style>
