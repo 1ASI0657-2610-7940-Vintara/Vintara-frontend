@@ -1,11 +1,10 @@
 // composables/useSensorAlerts.js
 // Composable para consumir el endpoint de alertas de sensores IoT del InventoryService.
-// Implementa polling HTTP cada 5s con manejo de errores y backoff exponencial.
+// Usa apiClient (axios preconfigurado con JWT) — el token del usuario se inyecta automáticamente.
 import { ref, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
+import apiClient from '../plugins/axios'
 
-const INVENTORY_BASE = import.meta.env.VITE_INVENTORY_API_URL
-const ALERTS_PATH = import.meta.env.VITE_SENSOR_ALERTS_ENDPOINT_PATH || '/sensor-alerts'
+const ALERTS_PATH = import.meta.env.VITE_SENSOR_ALERTS_ENDPOINT_PATH || '/inventory/sensor-alerts'
 
 // Backoff exponencial: 500ms → 1s → 2s → 4s ... máx 30s
 const getBackoffDelay = (attempt) => Math.min(500 * Math.pow(2, attempt), 30000)
@@ -18,17 +17,15 @@ export function useSensorAlerts(pollIntervalMs = 5000) {
   const errorCount = ref(0)
 
   let timer = null
-  // Guardamos los IDs de alertas críticas ya notificadas para no duplicar toasts
   const notifiedIds = new Set()
 
   /**
-   * Llama a GET /api/v1/sensor-alerts y actualiza el estado reactivo.
-   * @param {Function} onNewCritical - Callback opcional que recibe la alerta nueva crítica
+   * GET /api/inventory/sensor-alerts?page=1&size=50
    */
   const fetchAlerts = async (onNewCritical = null) => {
     try {
-      const { data } = await axios.get(`${INVENTORY_BASE}${ALERTS_PATH}`, {
-        params: { size: 50, page: 1 }
+      const { data } = await apiClient.get(ALERTS_PATH, {
+        params: { page: 1, size: 50 }
       })
 
       alerts.value = data.items ?? []
@@ -36,7 +33,6 @@ export function useSensorAlerts(pollIntervalMs = 5000) {
         (a) => a.status === 'CRITICAL' && !a.acknowledged
       ).length
 
-      // Detectar nuevas alertas críticas no notificadas
       if (onNewCritical) {
         alerts.value.forEach((alert) => {
           if (alert.status === 'CRITICAL' && !alert.acknowledged && !notifiedIds.has(alert.id)) {
@@ -44,7 +40,6 @@ export function useSensorAlerts(pollIntervalMs = 5000) {
             onNewCritical(alert)
           }
         })
-        // Limpiar IDs de alertas ya reconocidas del set para no acumular
         alerts.value
           .filter((a) => a.acknowledged)
           .forEach((a) => notifiedIds.delete(a.id))
@@ -59,13 +54,11 @@ export function useSensorAlerts(pollIntervalMs = 5000) {
       serviceOffline.value = true
       isLoading.value = false
 
-      // Backoff exponencial: reprogramar el siguiente intento con delay mayor
       if (timer) {
         clearInterval(timer)
         const delay = getBackoffDelay(errorCount.value)
         timer = setTimeout(() => {
           fetchAlerts(onNewCritical)
-          // Reanudar polling normal después del reintento
           timer = setInterval(() => fetchAlerts(onNewCritical), pollIntervalMs)
         }, delay)
       }
@@ -73,13 +66,11 @@ export function useSensorAlerts(pollIntervalMs = 5000) {
   }
 
   /**
-   * Marca una alerta como reconocida/resuelta.
-   * @param {number} id - ID de la alerta
+   * PATCH /api/inventory/sensor-alerts/{id}/acknowledge
    */
   const acknowledgeAlert = async (id) => {
     try {
-      await axios.patch(`${INVENTORY_BASE}${ALERTS_PATH}/${id}/acknowledge`)
-      // Actualizar localmente para respuesta inmediata en UI
+      await apiClient.patch(`${ALERTS_PATH}/${id}/acknowledge`)
       const alert = alerts.value.find((a) => a.id === id)
       if (alert) {
         alert.acknowledged = true

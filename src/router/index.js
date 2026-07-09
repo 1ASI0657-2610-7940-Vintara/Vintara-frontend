@@ -21,6 +21,12 @@ const routes = [
       { path: 'compliance', name: 'Compliance', component: () => import('../views/ComplianceView.vue') },
       { path: 'reports', name: 'Reports', component: () => import('../views/RegulatoryReportsView.vue') }
     ]
+  },
+  // Catch-all: cualquier ruta no encontrada
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    redirect: '/dashboard'
   }
 ]
 
@@ -31,9 +37,13 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
+  const isAuth = authStore.isAuthenticated()
+
+  if (to.meta.requiresAuth && !isAuth) {
+    // Ruta protegida sin sesión → login
     next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated()) {
+  } else if (to.path === '/login' && isAuth) {
+    // Ya logueado y va a login → dashboard
     next('/dashboard')
   } else {
     next()

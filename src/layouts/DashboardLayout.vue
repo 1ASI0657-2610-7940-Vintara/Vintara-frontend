@@ -6,6 +6,7 @@ import { useAlertsStore } from '../store/alerts'
 import { useToastStore } from '../store/toast'
 import { useSensorAlerts } from '../composables/useSensorAlerts'
 import ProfileSlideOver from '../components/ProfileSlideOver.vue'
+import { computed } from 'vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -31,6 +32,16 @@ onUnmounted(() => stopPolling())
 // Sincronizar el store global con los datos del composable
 watch(alerts, (newAlerts) => alertsStore.setAlerts(newAlerts))
 watch(serviceOffline, (val) => alertsStore.setServiceOffline(val))
+
+
+const userInitials = computed(() => {
+  const name = authStore.user?.fullName || authStore.user?.username || 'U'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.substring(0, 2).toUpperCase()
+})
 
 const handleLogout = () => {
   authStore.logout()
@@ -89,7 +100,7 @@ const handleLogout = () => {
         </router-link>
 
         <!-- Compliance Link -->
-        <router-link 
+        <!--<router-link 
           to="/compliance" 
           :class="[
             $route.path === '/compliance' 
@@ -99,7 +110,7 @@ const handleLogout = () => {
         >
           <span class="material-symbols-outlined" :style="$route.path === '/compliance' ? 'font-variation-settings: \'FILL\' 1;' : ''">check_circle</span>
           <span class="font-label-md text-label-md">Cumplimiento</span>
-        </router-link>
+        </router-link>-->
 
         <!-- Reports Link -->
         <router-link 
@@ -146,14 +157,14 @@ const handleLogout = () => {
         </div>
         
         <div class="flex items-center gap-4">
-          <div class="relative hidden md:block">
+          <!-- <div class="relative hidden md:block">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-70">search</span>
             <input 
               class="pl-10 pr-4 py-2 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary-container transition-all font-body-sm text-body-sm w-64 text-on-surface placeholder:text-on-surface-variant/70 outline-none" 
               placeholder="Buscar..." 
               type="text"
             />
-          </div>
+          </div> -->
 
           <!-- Notifications Bell with functional critical badge -->
           <button
@@ -183,12 +194,15 @@ const handleLogout = () => {
               <p class="font-label-md text-label-md text-on-surface font-semibold leading-tight group-hover:text-primary transition-colors">{{ authStore.user?.name }}</p>
               <p class="font-body-sm text-[12px] text-on-surface-variant capitalize">{{ authStore.user?.role }}</p>
             </div>
-            <div class="h-8 w-8 rounded-full bg-surface-variant border border-outline-variant overflow-hidden flex-shrink-0 group-hover:border-primary transition-colors">
+            <!-- <div class="h-8 w-8 rounded-full bg-surface-variant border border-outline-variant overflow-hidden flex-shrink-0 group-hover:border-primary transition-colors">
               <img 
                 alt="Perfil de Usuario" 
                 class="w-full h-full object-cover" 
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU0ff2ZhQpK7ML8y70Pumm2U_znsKmHUNpCpAt5tuzuIBEUfI8uMtdrops5MKtdj6QgeQR1AbYRtHLpdq2eB9-DDbErG3kO98k-miAVaBjrLUDcuROLMmH8knLk9sNUk0V_ZdolSdp-Bmg1PQgISVOvdYrzKOUtqRgS7QuTMtmk2VYEfxpKMjY1TW1QQwqGxkUPnge4JyHws1cD8Q5vQj1KhUiZXdOxT-pf4YNfStNRluRoSJZR0u9FzI6hxt-f7ZMve8Z9KkTNg"
               />
+            </div> -->
+            <div class="h-8 w-8 rounded-full bg-primary text-on-primary border border-outline-variant flex-shrink-0 group-hover:border-primary transition-colors flex items-center justify-center font-semibold text-sm">
+              {{ userInitials }}
             </div>
           </div>
         </div>
