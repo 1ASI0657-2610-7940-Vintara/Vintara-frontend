@@ -1,16 +1,16 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../store/auth'
-import { useAlertsStore } from '../store/alerts'
-import { useToastStore } from '../store/toast'
-import { useSensorAlerts } from '../composables/useSensorAlerts'
-import ProfileSlideOver from '../components/ProfileSlideOver.vue'
+import { useAuthStore } from '@/auth/application/auth.store'
+import { useIotStore } from '@/iot/application/iot.store'
+import { useToastStore } from '@/shared/application/toast.store'
+import { useSensorAlerts } from '@/iot/presentation/composables/useSensorAlerts'
+import ProfileSlideOver from '@/profiles/presentation/components/ProfileSlideOver.vue'
 import { computed } from 'vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const alertsStore = useAlertsStore()
+const alertsStore = useIotStore()
 const toastStore = useToastStore()
 const showProfile = ref(false)
 

@@ -1,25 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '../store/auth'
+import { useAuthStore } from '@/auth/application/auth.store'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 
+// Importar rutas de cada Bounded Context
+import { authRoutes } from '@/auth/presentation/auth.routes'
+import { inventoryRoutes } from '@/inventory/presentation/inventory.routes'
+import { iotRoutes } from '@/iot/presentation/iot.routes'
+import { profilesRoutes } from '@/profiles/presentation/profiles.routes'
+import { analyticsRoutes } from '@/analytics/presentation/analytics.routes'
+
 const routes = [
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('../views/LoginView.vue'),
-    meta: { requiresAuth: false }
-  },
+  ...authRoutes,
   {
     path: '/',
     component: DashboardLayout,
     meta: { requiresAuth: true },
     children: [
       { path: '', redirect: '/dashboard' },
-      { path: 'dashboard', name: 'Dashboard', component: () => import('../views/DashboardView.vue') },
-      { path: 'assets', name: 'Assets', component: () => import('../views/AssetManagementView.vue') },
-      { path: 'telemetry', name: 'Telemetry', component: () => import('../views/TelemetryAlertsView.vue') },
-      { path: 'compliance', name: 'Compliance', component: () => import('../views/ComplianceView.vue') },
-      { path: 'reports', name: 'Reports', component: () => import('../views/RegulatoryReportsView.vue') }
+      ...analyticsRoutes,
+      ...inventoryRoutes,
+      ...iotRoutes,
+      ...profilesRoutes
     ]
   },
   // Catch-all: cualquier ruta no encontrada
