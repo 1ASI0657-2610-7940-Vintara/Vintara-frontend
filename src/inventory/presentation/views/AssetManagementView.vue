@@ -236,6 +236,79 @@ const formatDate = (d) => {
     day: '2-digit', month: '2-digit', year: 'numeric'
   })
 }
+
+// ---- Stock Movement states ----
+const isMovementModalOpen = ref(false)
+const selectedSupplyForMovement = ref(null)
+const movementType = ref('ENTRY') // ENTRY | EXIT
+const movementQuantity = ref(1)
+const movementReason = ref('')
+const movementDate = ref(new Date().toISOString().split('T')[0])
+const isSavingMovement = ref(false)
+
+const openMovementModal = (supply) => {
+  selectedSupplyForMovement.value = supply
+  movementType.value = 'ENTRY'
+  movementQuantity.value = 1
+  movementReason.value = ''
+  movementDate.value = new Date().toISOString().split('T')[0]
+  isMovementModalOpen.value = true
+}
+
+const saveMovement = async () => {
+  if (movementQuantity.value <= 0) {
+    toastStore.warning('La cantidad debe ser mayor que 0.', 'Cantidad Inválida')
+    return
+  }
+  if (movementType.value === 'EXIT' && movementQuantity.value > selectedSupplyForMovement.value.quantity) {
+    toastStore.warning('No hay suficiente stock para realizar esta salida.', 'Stock Insuficiente')
+    return
+  }
+
+  isSavingMovement.value = true
+  try {
+    const dateObj = new Date(movementDate.value)
+    const now = new Date()
+    dateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
+
+    await suppliesStore.createStockMovement({
+      supplyId: selectedSupplyForMovement.value.id,
+      quantity: Math.floor(movementQuantity.value),
+      type: movementType.value,
+      reason: movementReason.value.trim(),
+      date: dateObj.toISOString()
+    })
+    toastStore.success('Movimiento de stock registrado con éxito.', 'Éxito')
+    isMovementModalOpen.value = false
+  } catch (error) {
+    toastStore.error(error.response?.data?.error || 'No se pudo registrar el movimiento.', 'Error')
+  } finally {
+    isSavingMovement.value = false
+  }
+}
+
+// ---- History Modal states ----
+const isHistoryModalOpen = ref(false)
+const selectedSupplyForHistory = ref(null)
+const isHistoryLoading = ref(false)
+
+const filteredMovements = computed(() => {
+  if (!selectedSupplyForHistory.value) return []
+  return suppliesStore.movements.filter(m => m.supplyId === selectedSupplyForHistory.value.id)
+})
+
+const openHistoryModal = async (supply) => {
+  selectedSupplyForHistory.value = supply
+  isHistoryModalOpen.value = true
+  isHistoryLoading.value = true
+  try {
+    await suppliesStore.fetchStockMovements()
+  } catch (error) {
+    toastStore.error('No se pudo cargar el historial de movimientos.', 'Error')
+  } finally {
+    isHistoryLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -435,6 +508,18 @@ const formatDate = (d) => {
               </td>
               <td class="py-4 px-6 text-right">
                 <button
+                  @click="openMovementModal(supply)"
+                  class="text-secondary hover:text-secondary-container font-label-md transition-colors mr-4"
+                >
+                  Movimiento
+                </button>
+                <button
+                  @click="openHistoryModal(supply)"
+                  class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors mr-4"
+                >
+                  Historial
+                </button>
+                <button
                   @click="openEditModal(supply)"
                   class="text-primary hover:text-primary-container font-label-md transition-colors mr-4"
                 >
@@ -580,6 +665,163 @@ const formatDate = (d) => {
             >
               <span v-if="isSaving" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
               {{ isSaving ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal de Movimiento (Entrada / Salida) -->
+    <transition name="fade">
+      <div v-if="isMovementModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm transition-opacity" @click="isMovementModalOpen = false"></div>
+
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-2xl w-full max-w-md overflow-hidden transform transition-all z-10">
+          <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface">
+            <h3 class="font-headline-sm text-headline-sm text-on-surface">
+              Registrar Movimiento: {{ selectedSupplyForMovement?.supplyName }}
+            </h3>
+            <button @click="isMovementModalOpen = false" class="text-on-surface-variant hover:text-on-surface flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-4 bg-surface-container-lowest">
+            <div>
+              <label class="block font-label-md text-label-md text-on-surface mb-1">Tipo de Movimiento</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer font-body-md text-body-md text-on-surface">
+                  <input type="radio" value="ENTRY" v-model="movementType" class="text-primary focus:ring-primary h-4 w-4" />
+                  <span>Entrada (+)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-body-md text-body-md text-on-surface">
+                  <input type="radio" value="EXIT" v-model="movementType" class="text-primary focus:ring-primary h-4 w-4" />
+                  <span>Salida (-)</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-label-md text-label-md text-on-surface mb-1" for="movement-quantity">Cantidad</label>
+              <input
+                id="movement-quantity"
+                type="number"
+                min="1"
+                step="1"
+                v-model.number="movementQuantity"
+                :disabled="isSavingMovement"
+                class="w-full px-3 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface transition-colors outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block font-label-md text-label-md text-on-surface mb-1" for="movement-reason">Motivo / Razón</label>
+              <input
+                id="movement-reason"
+                type="text"
+                v-model="movementReason"
+                placeholder="Ej: Lote de compra #43, Consumo"
+                :disabled="isSavingMovement"
+                class="w-full px-3 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface transition-colors outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block font-label-md text-label-md text-on-surface mb-1" for="movement-date">Fecha de Movimiento</label>
+              <input
+                id="movement-date"
+                type="date"
+                v-model="movementDate"
+                :disabled="isSavingMovement"
+                class="w-full px-3 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface transition-colors outline-none"
+              />
+            </div>
+          </div>
+
+          <div class="bg-surface p-6 border-t border-outline-variant flex justify-end gap-3">
+            <button
+              type="button"
+              @click="isMovementModalOpen = false"
+              :disabled="isSavingMovement"
+              class="px-4 py-2 border border-outline-variant rounded-lg bg-surface text-on-surface hover:bg-surface-container font-label-md text-label-md transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              @click="saveMovement"
+              :disabled="isSavingMovement"
+              class="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <span v-if="isSavingMovement" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+              Registrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal de Historial de Movimientos -->
+    <transition name="fade">
+      <div v-if="isHistoryModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm transition-opacity" @click="isHistoryModalOpen = false"></div>
+
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all z-10">
+          <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface">
+            <h3 class="font-headline-sm text-headline-sm text-on-surface">
+              Historial de Movimientos: {{ selectedSupplyForHistory?.supplyName }}
+            </h3>
+            <button @click="isHistoryModalOpen = false" class="text-on-surface-variant hover:text-on-surface flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+
+          <div class="p-6 bg-surface-container-lowest max-h-[60vh] overflow-y-auto">
+            <div v-if="isHistoryLoading" class="p-8 flex flex-col items-center justify-center gap-3">
+              <div class="animate-spin rounded-full h-8 w-8 border-4 border-rose-800 border-t-transparent"></div>
+              <p class="font-label-md text-on-surface-variant">Cargando movimientos...</p>
+            </div>
+            
+            <div v-else-if="filteredMovements.length === 0" class="p-8 text-center text-on-surface-variant font-body-md opacity-60">
+              No hay movimientos registrados para este insumo.
+            </div>
+
+            <table v-else class="w-full text-left border-collapse text-left">
+              <thead>
+                <tr class="border-b border-outline-variant bg-surface-container-low/50">
+                  <th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase">Fecha</th>
+                  <th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase">Tipo</th>
+                  <th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase">Cantidad</th>
+                  <th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase">Motivo</th>
+                </tr>
+              </thead>
+              <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant/30">
+                <tr v-for="m in filteredMovements" :key="m.id" class="hover:bg-surface-container-low transition-colors duration-150">
+                  <td class="py-3 px-4 text-on-surface-variant">{{ formatDate(m.date) }}</td>
+                  <td class="py-3 px-4">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      :class="m.type === 'ENTRY' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'"
+                    >
+                      {{ m.type === 'ENTRY' ? 'Entrada' : 'Salida' }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 font-mono font-bold" :class="m.type === 'ENTRY' ? 'text-emerald-700' : 'text-rose-700'">
+                    {{ m.type === 'ENTRY' ? '+' : '-' }}{{ m.quantity }}
+                  </td>
+                  <td class="py-3 px-4 text-on-surface-variant">{{ m.reason || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bg-surface p-4 border-t border-outline-variant flex justify-end">
+            <button
+              type="button"
+              @click="isHistoryModalOpen = false"
+              class="px-4 py-2 bg-surface border border-outline-variant rounded-lg text-on-surface hover:bg-surface-container font-label-md text-label-md transition-colors"
+            >
+              Cerrar
             </button>
           </div>
         </div>
