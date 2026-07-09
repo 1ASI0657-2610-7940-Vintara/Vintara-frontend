@@ -168,6 +168,7 @@ const handleLogout = () => {
 
           <!-- Notifications Bell with functional critical badge -->
           <button
+            @click="router.push('/telemetry')"
             :title="alertsStore.criticalCount > 0 ? `${alertsStore.criticalCount} alerta(s) crítica(s) no reconocidas` : 'Sin alertas críticas'"
             class="p-2 text-on-surface-variant hover:text-primary transition-colors focus:ring-2 focus:ring-primary-container rounded-full relative"
           >

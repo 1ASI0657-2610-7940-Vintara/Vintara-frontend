@@ -1,22 +1,25 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Line } from 'vue-chartjs'
+import { Line, Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
   Filler
 } from 'chart.js'
 import { useIotStore } from '@/iot/application/iot.store'
+import { useInventoryStore } from '@/inventory/application/inventory.store'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
 
 const alertsStore = useIotStore()
+const inventoryStore = useInventoryStore()
 
 // ---- KPIs dinámicos ----
 const kpis = computed(() => [
@@ -137,13 +140,19 @@ const forceRefresh = () => {
   countdown.value = 60
 }
 
-onMounted(() => {
+onMounted(async () => {
   refreshInterval = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
       forceRefresh()
     }
   }, 1000)
+
+  try {
+    await inventoryStore.fetchStockMovements()
+  } catch (e) {
+    console.error('Error fetching stock movements for dashboard:', e)
+  }
 })
 
 onUnmounted(() => {
@@ -345,6 +354,80 @@ const chartOptions = computed(() => ({
     }
   }
 }))
+
+// ---- Stock Movements Chart Logic ----
+const movementChartData = computed(() => {
+  // Dependency on refreshTrigger to refresh every 60s
+  const _trigger = refreshTrigger.value
+  
+  const now = Date.now()
+  const cutoff = now - activeRange.value.ms
+  
+  // 1. Filtrar movimientos en rango
+  const rawMovements = (inventoryStore.movements || []).filter(m => 
+    new Date(m.date).getTime() >= cutoff
+  )
+
+  // 2. Agrupar por Nombre de Insumo (supplyName)
+  const productData = {}
+  
+  rawMovements.forEach(m => {
+    const name = m.supplyName || `Insumo #${m.supplyId}`
+    if (!productData[name]) {
+      productData[name] = { entry: 0, exit: 0 }
+    }
+    if (m.type === 'ENTRY') {
+      productData[name].entry += m.quantity
+    } else if (m.type === 'EXIT') {
+      productData[name].exit += m.quantity
+    }
+  })
+
+  // 3. Generar labels y datasets
+  const labels = Object.keys(productData).sort()
+  const entryData = []
+  const exitData = []
+  
+  labels.forEach(name => {
+    entryData.push(productData[name].entry)
+    exitData.push(productData[name].exit)
+  })
+
+  return {
+    labels: labels.length ? labels : ['Sin movimientos'],
+    datasets: [
+      {
+        label: 'Entradas (+)',
+        backgroundColor: '#10b981', // Emerald 500
+        borderColor: '#10b981',
+        data: entryData.length ? entryData : [0]
+      },
+      {
+        label: 'Salidas (-)',
+        backgroundColor: '#f43f5e', // Rose 500
+        borderColor: '#f43f5e',
+        data: exitData.length ? exitData : [0]
+      }
+    ]
+  }
+})
+
+const movementChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: true, position: 'bottom' }
+  },
+  scales: {
+    y: { 
+      beginAtZero: true,
+      title: { display: true, text: 'Cantidad' }
+    },
+    x: { 
+      ticks: { maxRotation: 45, minRotation: 0 } 
+    }
+  }
+}))
 </script>
 
 <template>
@@ -444,6 +527,26 @@ const chartOptions = computed(() => ({
       </div>
       <div v-else class="h-[400px] relative">
         <Line :data="activeChartData" :options="chartOptions" />
+      </div>
+    </div>
+
+    <!-- Stock Movements Chart Area -->
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-headline-sm text-headline-sm text-on-surface">
+            Movimiento General de Productos (Entradas vs. Salidas)
+          </h3>
+          <p class="text-xs text-on-surface-variant mt-1">Resumen consolidado de movimientos de stock para el rango seleccionado</p>
+        </div>
+      </div>
+      
+      <div v-if="!inventoryStore.movements || inventoryStore.movements.length === 0" class="h-[300px] flex flex-col items-center justify-center gap-2 text-on-surface-variant">
+        <span class="material-symbols-outlined text-[40px] opacity-30">pending_actions</span>
+        <p class="font-label-md text-label-md opacity-60">No hay movimientos registrados en este periodo...</p>
+      </div>
+      <div v-else class="h-[300px] relative">
+        <Bar :data="movementChartData" :options="movementChartOptions" />
       </div>
     </div>
 

@@ -2,9 +2,11 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { InventoryApi } from '../infrastructure/inventory-api'
 import { SupplyAssembler } from '../infrastructure/supply.assembler'
+import { StockMovementAssembler } from '../infrastructure/stock-movement.assembler'
 
 export const useInventoryStore = defineStore('inventory', () => {
   const supplies = ref([])
+  const movements = ref([])
   const isLoading = ref(false)
 
   const fetchSupplies = async () => {
@@ -60,12 +62,52 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  const fetchStockMovements = async () => {
+    isLoading.value = true
+    try {
+      const response = await InventoryApi.getStockMovements()
+      movements.value = StockMovementAssembler.toEntitiesFromResponse(response)
+      return movements.value
+    } catch (error) {
+      console.error('[InventoryStore] Error fetching movements:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const createStockMovement = async (payload) => {
+    try {
+      const response = await InventoryApi.createStockMovement(payload)
+      const entity = StockMovementAssembler.toEntityFromResource(response.data)
+      if (entity) {
+        movements.value.unshift(entity)
+        // Actualizar localmente el stock de la supply
+        const supply = supplies.value.find((s) => s.id === entity.supplyId)
+        if (supply) {
+          if (entity.type === 'ENTRY') {
+            supply.quantity += entity.quantity
+          } else if (entity.type === 'EXIT') {
+            supply.quantity -= entity.quantity
+          }
+        }
+      }
+      return entity
+    } catch (error) {
+      console.error('[InventoryStore] Error creating stock movement:', error)
+      throw error
+    }
+  }
+
   return {
     supplies,
+    movements,
     isLoading,
     fetchSupplies,
     createSupply,
     updateSupply,
-    deleteSupply
+    deleteSupply,
+    fetchStockMovements,
+    createStockMovement
   }
 })
