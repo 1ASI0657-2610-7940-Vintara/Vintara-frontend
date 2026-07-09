@@ -8,6 +8,7 @@ import { inventoryRoutes } from '@/inventory/presentation/inventory.routes'
 import { iotRoutes } from '@/iot/presentation/iot.routes'
 import { profilesRoutes } from '@/profiles/presentation/profiles.routes'
 import { analyticsRoutes } from '@/analytics/presentation/analytics.routes'
+import { subscriptionRoutes } from '@/subscription/presentation/subscription.routes'
 
 const routes = [
   ...authRoutes,
@@ -20,7 +21,8 @@ const routes = [
       ...analyticsRoutes,
       ...inventoryRoutes,
       ...iotRoutes,
-      ...profilesRoutes
+      ...profilesRoutes,
+      ...subscriptionRoutes
     ]
   },
   // Catch-all: cualquier ruta no encontrada

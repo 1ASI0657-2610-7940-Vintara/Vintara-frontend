@@ -1,17 +1,20 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/auth/application/auth.store'
 import { useIotStore } from '@/iot/application/iot.store'
 import { useToastStore } from '@/shared/application/toast.store'
 import { useSensorAlerts } from '@/iot/presentation/composables/useSensorAlerts'
 import ProfileSlideOver from '@/profiles/presentation/components/ProfileSlideOver.vue'
-import { computed } from 'vue'
+import DeviceLimitModal from '@/subscription/presentation/components/DeviceLimitModal.vue'
+import { useSubscriptionStore } from '@/subscription/application/subscription.store'
+
 
 const router = useRouter()
 const authStore = useAuthStore()
 const alertsStore = useIotStore()
 const toastStore = useToastStore()
+const subscriptionStore = useSubscriptionStore()
 const showProfile = ref(false)
 
 // Iniciar el polling de alertas a nivel de layout para que el badge siempre esté actualizado
@@ -124,6 +127,25 @@ const handleLogout = () => {
           <span class="material-symbols-outlined" :style="$route.path === '/reports' ? 'font-variation-settings: \'FILL\' 1;' : ''">bar_chart</span>
           <span class="font-label-md text-label-md">Reportes</span>
         </router-link>
+
+        <!-- Plans Link -->
+        <router-link
+          to="/plans"
+          :class="[
+            $route.path === '/plans'
+              ? 'bg-primary text-on-primary rounded-lg mx-2 my-1 flex items-center gap-3 px-4 py-3 opacity-90 transition-all duration-200'
+              : 'text-surface-variant hover:text-surface-bright mx-2 my-1 flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-container hover:text-on-primary-container rounded-lg'
+          ]"
+        >
+          <span class="material-symbols-outlined" :style="$route.path === '/plans' ? 'font-variation-settings: \'FILL\' 1;' : ''">workspace_premium</span>
+          <span class="font-label-md text-label-md">Planes</span>
+          <!-- badge FREE visible only on inactive state -->
+          <span
+            v-if="$route.path !== '/plans'"
+            class="ml-auto px-1.5 py-0.5 rounded-full border font-label-sm text-[10px]"
+            :class="subscriptionStore.planBadgeColor"
+          >{{ subscriptionStore.currentPlan.name }}</span>
+        </router-link>
       </div>
 
       <!-- Action Button & Footer Links in Sidebar -->
@@ -194,6 +216,11 @@ const handleLogout = () => {
             <div class="text-right hidden sm:block">
               <p class="font-label-md text-label-md text-on-surface font-semibold leading-tight group-hover:text-primary transition-colors">{{ authStore.user?.name }}</p>
               <p class="font-body-sm text-[12px] text-on-surface-variant capitalize">{{ authStore.user?.role }}</p>
+              <!-- Plan badge -->
+              <span
+                class="inline-block px-1.5 py-0.5 rounded-full border font-label-sm text-[10px] leading-tight mt-0.5"
+                :class="subscriptionStore.planBadgeColor"
+              >{{ subscriptionStore.currentPlan.name }}</span>
             </div>
             <!-- <div class="h-8 w-8 rounded-full bg-surface-variant border border-outline-variant overflow-hidden flex-shrink-0 group-hover:border-primary transition-colors">
               <img 
@@ -239,6 +266,12 @@ const handleLogout = () => {
 
   <!-- Profile Slide-Over Panel -->
   <ProfileSlideOver :show="showProfile" @close="showProfile = false" />
+
+  <!-- Device Limit Modal -->
+  <DeviceLimitModal
+    :show="subscriptionStore.isOverDeviceLimit"
+    @close="subscriptionStore.setDeviceCount(subscriptionStore.deviceLimit - 1)"
+  />
 </template>
 
 

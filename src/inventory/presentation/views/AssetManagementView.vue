@@ -3,9 +3,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useToastStore } from '@/shared/application/toast.store'
 import { useInventoryStore } from '../../application/inventory.store'
 import { useInventoryAlerts } from '../composables/useInventoryAlerts'
+import { useSubscriptionStore } from '@/subscription/application/subscription.store'
+import DeviceLimitModal from '@/subscription/presentation/components/DeviceLimitModal.vue'
 
 const toastStore = useToastStore()
 const suppliesStore = useInventoryStore()
+const subscriptionStore = useSubscriptionStore()
+const showDeviceLimitModal = ref(false)
 
 const {
   lowStockThreshold,
@@ -120,6 +124,11 @@ onMounted(() => {
 
 // ---- Modal ----
 const openCreateModal = () => {
+  // ── Verificar límite del plan antes de abrir el modal ──
+  if (subscriptionStore.isOverDeviceLimit) {
+    showDeviceLimitModal.value = true
+    return
+  }
   isEditMode.value = false
   editingId.value = null
   supplyName.value = ''
@@ -177,6 +186,7 @@ const saveSupply = async () => {
       const data = await suppliesStore.createSupply(basePayload)
       savedId = data?.id
       toastStore.success(`Insumo "${basePayload.supplyName}" creado.`, 'Creado')
+      subscriptionStore.incrementDeviceCount()
     }
 
     // Guardar fecha de vencimiento en localStorage (no persiste en backend aún)
@@ -206,6 +216,7 @@ const deleteSupply = async (supply) => {
     await suppliesStore.deleteSupply(supply.id)
     clearExpiration(supply.id)
     toastStore.success(`Insumo "${supply.supplyName}" eliminado.`, 'Eliminado')
+    subscriptionStore.decrementDeviceCount()
   } catch (error) {
     console.error('Error deleting supply:', error)
     toastStore.error('No se pudo eliminar el insumo.', 'Error')
@@ -827,6 +838,12 @@ const openHistoryModal = async (supply) => {
         </div>
       </div>
     </transition>
+
+    <!-- Device Limit Modal (local trigger from this view) -->
+    <DeviceLimitModal
+      :show="showDeviceLimitModal"
+      @close="showDeviceLimitModal = false"
+    />
   </div>
 </template>
 
