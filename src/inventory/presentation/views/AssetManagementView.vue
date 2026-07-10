@@ -243,7 +243,15 @@ const formatPrice = (p) => {
 
 const formatDate = (d) => {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('es-PE', {
+  let parsedDate = d
+  if (typeof d === 'string' && d.includes('T')) {
+    const timePart = d.split('T')[1]
+    const hasTimezone = d.endsWith('Z') || timePart.includes('+') || timePart.includes('-')
+    if (!hasTimezone) {
+      parsedDate = d + 'Z'
+    }
+  }
+  return new Date(parsedDate).toLocaleDateString('es-PE', {
     day: '2-digit', month: '2-digit', year: 'numeric'
   })
 }

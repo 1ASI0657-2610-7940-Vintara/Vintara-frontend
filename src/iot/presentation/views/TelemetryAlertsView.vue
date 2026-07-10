@@ -84,7 +84,15 @@ const getStatusIcon = (status) => {
 
 const formatTimestamp = (ts) => {
   if (!ts) return '—'
-  return new Date(ts).toLocaleString('es-PE', {
+  let parsedDate = ts
+  if (typeof ts === 'string' && ts.includes('T')) {
+    const timePart = ts.split('T')[1]
+    const hasTimezone = ts.endsWith('Z') || timePart.includes('+') || timePart.includes('-')
+    if (!hasTimezone) {
+      parsedDate = ts + 'Z'
+    }
+  }
+  return new Date(parsedDate).toLocaleString('es-PE', {
     day: '2-digit', month: '2-digit', year: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   })
